@@ -49,7 +49,7 @@ function makeProgram(gl) {
 			return length(max(p, 0.0)) + min(0.0, max(p.x, p.y));
 		}
 
-		vec2 getDist(vec3 p) {
+		float getDist(vec3 p) {
 			vec2 uv = p.yz + vec2(0.5, -0.35);
 			uv *= rot(-2.0);
 			float d3u = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.3, vec2(0.0, 0.1));
@@ -72,17 +72,14 @@ function makeProgram(gl) {
 			// hole.xy *= rot(-u_time + sin(u_time * 1.0) * 1.0);
 			// d = softmax(length(p - hole) - 0.5, d, 0.25);
 			float s = length(uv) - u_time * 0.25 + sin(p.x * 7.0) * 0.5 * sin(p.y * 11.0) * 0.5 * sin(p.z * 13.0) * 0.5;
-			float dMax = max(d, s);
-			if(dMax > d) {
-				hit = 1.0;
-			}
-			return vec2(dMax, hit);
+			d = max(d, s);
+			return d;
 		}
 
 		vec3 getNormal(vec3 p) {
-			float d = getDist(p).x;
+			float d = getDist(p);
 			vec2 e = vec2(0.0001, 0.0);
-			vec3 n = d - vec3(getDist(p - e.xyy).x, getDist(p - e.yxy).x, getDist(p - e.yyx).x);
+			vec3 n = d - vec3(getDist(p - e.xyy), getDist(p - e.yxy), getDist(p - e.yyx));
 			return normalize(n);
 		}
 
@@ -103,11 +100,11 @@ function makeProgram(gl) {
 			vec3 light = normalize(vec3(-0.5, 0.5, 1.0));
 			vec3 p = ro;
 			float minD = 1000.0;
-			for(int i = 0; i < 200; i++) {
-				vec2 d = getDist(p);
-				if(d.x > 20.0) getGlow(minD);
-				minD = min(minD, d.x);
-				if(d.x < 0.001) {
+			for(int i = 0; i < 100; i++) {
+				float d = getDist(p);
+				if(d > 20.0) return getGlow(minD);
+				minD = min(minD, d);
+				if(d < 0.01) {
 					vec3 n = getNormal(p);
 					vec3 refDir = reflect(rd, n);
 					float dif = dot(n, light) * 0.5 + 0.25;
@@ -116,7 +113,7 @@ function makeProgram(gl) {
 					vec3 colRef = getSky(refDir);
 					return vec3(dif + ref) + colRef * 0.2 + getGlow(minD);
 				}
-				p += rd * d.x;
+				p += rd * d;
 			}
 			return getGlow(minD);
 		}
