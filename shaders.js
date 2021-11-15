@@ -49,7 +49,7 @@ function makeProgram(gl) {
 			return length(max(p, 0.0)) + min(0.0, max(p.x, p.y));
 		}
 
-		float getDist(vec3 p) {
+		vec2 getDist(vec3 p) {
 			vec2 uv = p.yz + vec2(0.5, -0.35);
 			uv *= rot(-2.0);
 			float d3u = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.3, vec2(0.0, 0.1));
@@ -65,21 +65,19 @@ function makeProgram(gl) {
 			dd = min(dd, box(uv + vec2(0.0, 0.0), vec2(0.13, 0.72)));
 
 			float d = min(d3, dd) - 0.02;
-
-			float hit = 0.0;
-			d = extrude(p.x, d, 0.1) - 0.01;
-			// vec3 hole = vec3(0.0, u_mouse);
-			// hole.xy *= rot(-u_time + sin(u_time * 1.0) * 1.0);
-			// d = softmax(length(p - hole) - 0.5, d, 0.25);
-			float s = length(uv) - u_time * 0.25 + sin(p.x * 7.0) * 0.5 * sin(p.y * 11.0) * 0.5 * sin(p.z * 13.0) * 0.5;
+			d = mix(abs(d) - 0.001, d, clamp(u_time - 3.5, 0.0, 1.0));
+			float s = -uv.y * 0.5 - u_time * 0.5 + 1.0;
 			d = max(d, s);
-			return d;
+			float e = clamp(u_time - 4.0, 0.01, 1.0) * 0.1;
+			d = extrude(p.x, d, e) - 0.01;
+
+			return vec2(d, 0.0);
 		}
 
 		vec3 getNormal(vec3 p) {
-			float d = getDist(p);
+			float d = getDist(p).x;
 			vec2 e = vec2(0.0001, 0.0);
-			vec3 n = d - vec3(getDist(p - e.xyy), getDist(p - e.yxy), getDist(p - e.yyx));
+			vec3 n = d - vec3(getDist(p - e.xyy).x, getDist(p - e.yxy).x, getDist(p - e.yyx).x);
 			return normalize(n);
 		}
 
@@ -100,11 +98,11 @@ function makeProgram(gl) {
 			vec3 light = normalize(vec3(-0.5, 0.5, 1.0));
 			vec3 p = ro;
 			float minD = 1000.0;
-			for(int i = 0; i < 100; i++) {
-				float d = getDist(p);
-				if(d > 20.0) return getGlow(minD);
-				minD = min(minD, d);
-				if(d < 0.01) {
+			for(int i = 0; i < 200; i++) {
+				vec2 d = getDist(p);
+				if(d.x > 20.0) return getGlow(minD);
+				minD = min(minD, d.x);
+				if(d.x < 0.001) {
 					vec3 n = getNormal(p);
 					vec3 refDir = reflect(rd, n);
 					float dif = dot(n, light) * 0.5 + 0.25;
@@ -113,7 +111,7 @@ function makeProgram(gl) {
 					vec3 colRef = getSky(refDir);
 					return vec3(dif + ref) + colRef * 0.2 + getGlow(minD);
 				}
-				p += rd * d;
+				p += rd * d.x;
 			}
 			return getGlow(minD);
 		}
@@ -123,8 +121,11 @@ function makeProgram(gl) {
 			uv.x *= u_resolution.x / u_resolution.y;
 			vec3 ro = vec3(-3.0, 0.0, 0.0);
 			vec3 rd = normalize(vec3(1.0, uv));
-			ro.xy *= rot(-u_time + sin(u_time * 1.0) * 1.0);
-			rd.xy *= rot(-u_time + sin(u_time * 1.0) * 1.0);
+			if(u_time > 5.0) {
+				float t = u_time - 5.0;
+				ro.xy *= rot(-t + sin(t));
+				rd.xy *= rot(-t + sin(t));
+			}
 			vec3 col = march(ro, rd);
 			outColor = vec4(col, 1.0);
 		}
