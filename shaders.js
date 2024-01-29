@@ -45,10 +45,6 @@ function makeProgram(gl) {
 			return mat2(c, -s, s, c);
 		}
 
-		float pinch(float p, float d, float h) {
-			return d + abs(p / (h * 5.0 + 0.5));
-		}
-
 		float plane(vec3 p, vec3 n, float h) {
 			return dot(p, n) + h;
 		}
@@ -67,86 +63,32 @@ function makeProgram(gl) {
 			return length(max(p, 0.0)) + min(0.0, max(p.x, p.y));
 		}
 
-		float sdCone( vec3 p, vec2 c, float h ) {
-			vec2 q = h*vec2(c.x/c.y,-1.0);
-			vec2 w = vec2( length(p.xy), p.z );
-			vec2 a = w - q*clamp( dot(w,q)/dot(q,q), 0.0, 1.0 );
-			vec2 b = w - q*vec2( clamp( w.x/q.x, 0.0, 1.0 ), 1.0 );
-			float k = sign( q.y );
-			float d = min(dot( a, a ),dot(b, b));
-			float s = max( k*(w.x*q.y-w.y*q.x),k*(w.y-q.y)  );
-			return sqrt(d)*sign(s);
-		}
-
-		float sdStar5(in vec2 p, in float r, in float rf) {
-			const vec2 k1 = vec2(0.809016994375, -0.587785252292);
-			const vec2 k2 = vec2(-k1.x,k1.y);
-			p.x = abs(p.x);
-			p -= 2.0*max(dot(k1,p),0.0)*k1;
-			p -= 2.0*max(dot(k2,p),0.0)*k2;
-			p.x = abs(p.x);
-			p.y -= r;
-			vec2 ba = rf*vec2(-k1.y,k1.x) - vec2(0,1);
-			float h = clamp( dot(p,ba)/dot(ba,ba), 0.0, r );
-			return length(p-ba*h) * sign(p.y*ba.x-p.x*ba.y);
-		}
-
-		// float getDist(vec3 p) {
-		// 	vec2 uv = p.yz + vec2(0.5, -0.35);
-		// 	uv *= rot(-2.0);
-		// 	float d3u = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.3, vec2(0.0, 0.1));
-		// 	uv = p.yz + vec2(0.5, 0.3);
-		// 	uv *= rot(-1.0);
-		// 	float d3d = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.35, vec2(0.0, 0.1));
-		// 	float d3 = min(d3u, d3d);
-		// 	uv = p.yz + vec2(-0.4, 0.0);
-		// 	float dd = box(uv, vec2(0.25, 0.15)) - 0.15;
-		// 	dd = abs(dd - 0.3) - 0.12;
-		// 	dd = max(dd, -uv.x);
-		// 	dd = min(dd, box(uv + vec2(0.0, 0.0), vec2(0.13, 0.72)));
-		// 	float d = min(d3, dd) - 0.02;
-		// 	d = mix(abs(d) - 0.001, d, clamp(u_time - 3.5, 0.0, 1.0));
-		// 	float s = -uv.y * 0.5 - u_time * 0.5 + 1.0;
-		// 	d = max(d, s);
-		// 	float e = clamp(u_time - 4.0, 0.01, 1.0) * 0.1;
-		// 	d = extrude(p.x, d, e) - 0.01;
-		// 	return d;
-		// }
-
-		vec2 getDist(vec3 p) {
-			vec2 c = vec2(sin(3.1415 / 6.0), cos(3.1415 / 6.0));
-			float d = sdCone(p - vec3(0.0, 0.0, 1.0), c, 0.3);
-			c = vec2(sin(3.1415 / 5.5), cos(3.1415 / 5.5));
-			d = min(d, sdCone(p - vec3(0.0, 0.0, 0.8), c, 0.5));
-			c = vec2(sin(3.1415 / 5.0), cos(3.1415 / 5.0));
-			d = min(d, sdCone(p - vec3(0.0, 0.0, 0.5), c, 0.7));
-			c = vec2(sin(3.1415 / 4.5), cos(3.1415 / 4.5));
-			d = min(d, sdCone(p - vec3(0.0, 0.0, 0.1), c, 0.9));
-			float id = 1.0;
-			float star = sdStar5(p.yz - vec2(0.0, 1.05), 0.1, 0.5);
-			star = pinch(p.x, star, 0.1) * 0.5;
-			if(star < d) {
-				d = star;
-				id = 2.0;
-			}
-			p.xy = abs(p.xy);
-			float balls = length(p - vec3(0.35, 0.15, -0.05)) - 0.1;
-			balls = min(balls, length(p - vec3(0.15, 0.25, 0.15)) - 0.1);
-			balls = min(balls, length(p - vec3(0.4, 0.3, -0.5)) - 0.1);
-			balls = min(balls, length(p - vec3(0.15, 0.15, 0.5)) - 0.1);
-			if (balls < d) {
-				d = balls;
-				id = 3.0;
-			}
-			float s = p.z * 0.5 - u_time * 0.25 + 1.0;
+		float getDist(vec3 p) {
+			vec2 uv = p.yz + vec2(0.5, -0.35);
+			uv *= rot(-2.0);
+			float d3u = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.3, vec2(0.0, 0.1));
+			uv = p.yz + vec2(0.5, 0.3);
+			uv *= rot(-1.0);
+			float d3d = horseshoe(uv, vec2(cos(1.0), sin(1.0)), 0.35, vec2(0.0, 0.1));
+			float d3 = min(d3u, d3d);
+			uv = p.yz + vec2(-0.4, 0.0);
+			float dd = box(uv, vec2(0.25, 0.15)) - 0.15;
+			dd = abs(dd - 0.3) - 0.12;
+			dd = max(dd, -uv.x);
+			dd = min(dd, box(uv + vec2(0.0, 0.0), vec2(0.13, 0.72)));
+			float d = min(d3, dd) - 0.02;
+			d = mix(abs(d) - 0.001, d, clamp(u_time - 3.5, 0.0, 1.0));
+			float s = -uv.y * 0.5 - u_time * 0.5 + 1.0;
 			d = max(d, s);
-			return vec2(d, id);
+			float e = clamp(u_time - 4.0, 0.01, 1.0) * 0.1;
+			d = extrude(p.x, d, e) - 0.01;
+			return d;
 		}
 
 		vec3 getNormal(vec3 p) {
-			float d = getDist(p).x;
+			float d = getDist(p);
 			vec2 e = vec2(0.0001, 0.0);
-			vec3 n = d - vec3(getDist(p - e.xyy).x, getDist(p - e.yxy).x, getDist(p - e.yyx).x);
+			vec3 n = d - vec3(getDist(p - e.xyy), getDist(p - e.yxy), getDist(p - e.yyx));
 			return normalize(n);
 		}
 
@@ -182,41 +124,31 @@ function makeProgram(gl) {
 			return vec3(0.0);
 		}
 
-		vec4 getGlow(vec2 g) {
-			g.x = max(1.0, g.x * 100.0);
+		vec4 getGlow(float g) {
+			g = max(1.0, g * 100.0);
 			float t = clamp(6.0 - u_time, 0.0, 1.0);
-			vec4 col = vec4(1.0, 0.8, 0.4, 1.0);
-			if (g.y == 2.0) {
-				g.x *= 2.0;
-				t = 1.0;
-			}
-			return 1.0 / g.x * t * col;
+			return 1.0 / g * t * vec4(0.8, 0.9, 1.0, 1.0);
 		}
 
 		vec4 march(vec3 ro, vec3 rd) {
 			vec3 light = normalize(vec3(-0.5, 0.5, 1.0));
 			vec3 p = ro;
-			vec2 minD = vec2(1000.0, 0.0);
+			float minD = 1000.0;
 			for(int i = 0; i < 200; i++) {
-				vec2 d = getDist(p);
-				if(d.x > 20.0) return getGlow(minD);
-				if (d.x < minD.x) {
-					minD = d;
-				}
-				if(d.x < 0.005) {
+				float d = getDist(p);
+				if(d > 20.0) return getGlow(minD);
+				minD = min(minD, d);
+				if(d < 0.005) {
 					vec3 n = getNormal(p);
 					vec3 refDir = reflect(rd, n);
-					vec3 dif = vec3(dot(n, light) * 0.5 + 0.5);
-					if (d.y == 1.0) dif *= vec3(0.4, 0.8, 0.2);
-					else if (d.y == 2.0) dif *= vec3(1.0, 0.8, 0.4);
-					else dif = vec3(0.6, 0.1, 0.05);
+					float dif = dot(n, light) * 0.5 + 0.25;
 					float ref = dot(light, refDir) * 0.5 + 0.5;
 					ref = pow(ref, 256.0);
 					vec3 colRef = getSkyRef(ro, refDir);
-					vec3 col = dif + vec3(ref) + colRef * 0.2;
+					vec3 col = vec3(dif + ref) + colRef * 0.2;
 					return vec4(col, 1.0) + getGlow(minD);
 				}
-				p += rd * d.x;
+				p += rd * d;
 			}
 			return getGlow(minD);
 		}
