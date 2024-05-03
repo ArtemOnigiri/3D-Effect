@@ -60,7 +60,7 @@ function update() {
 	time += deltaTime;
 	gl.uniform2f(program.mouseUniform, mx * 2.8, -my * 1.5);
 	currentTime = currentTimeNew;
-	gl.uniform1f(program.timeUniform, time / 1000);
+	gl.uniform1f(program.timeUniform, time / 100);
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 	window.requestAnimationFrame(update);
 }
