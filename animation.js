@@ -29,11 +29,16 @@ let mx = 0;
 let my = 0;
 document.addEventListener('mousemove', mouseMove);
 
+const urlParams = new URLSearchParams(window.location.search);
+let speed = urlParams.get('speed');
+speed = (speed !== null && !isNaN(speed)) ? parseFloat(speed) : 1;
+let mouse = !!urlParams.get('mouse');
+
 initGL();
 
 function initGL() {
 	gl.viewport(0, 0, width, height);
-	program = makeProgram(gl);
+	program = makeProgram(gl, mouse);
 
 	gl.useProgram(program.program);
 
@@ -60,7 +65,8 @@ function update() {
 	time += deltaTime;
 	gl.uniform2f(program.mouseUniform, mx * 2.8, -my * 1.5);
 	currentTime = currentTimeNew;
-	gl.uniform1f(program.timeUniform, time / 100);
+	const seconds = time / 1000;
+	gl.uniform1f(program.timeUniform, seconds * speed);
 	gl.drawArrays(gl.TRIANGLES, 0, 6);
 	window.requestAnimationFrame(update);
 }

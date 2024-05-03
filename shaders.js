@@ -1,5 +1,5 @@
-function makeProgram(gl) {
-	const vertexShaderCode =
+function makeProgram(gl, mouse = false) {
+	let vertexShaderCode =
 		`#version 300 es
 		in vec2 a_position;
 		in vec2 a_texcoord;
@@ -10,7 +10,7 @@ function makeProgram(gl) {
 		}
 	`;
 
-	const fragmentShaderCode =
+	let fragmentShaderCode =
 		`#version 300 es
 		precision highp float;
 		uniform float u_time;
@@ -82,6 +82,7 @@ function makeProgram(gl) {
 			d = max(d, s);
 			float e = clamp(u_time - 4.0, 0.01, 1.0) * 0.1;
 			d = extrude(p.x, d, e) - 0.01;
+			// mouse
 			return d;
 		}
 
@@ -167,6 +168,14 @@ function makeProgram(gl) {
 			outColor = vec4(col.rgb, 1.0);
 		}
 	`;
+	const mouseCode = `
+		float ballSize = clamp(u_time - 4.0, 0.0, 0.3);
+		p.yx *= rot(-u_time + sin(u_time * 1.0) * 1.0);
+		p.yz -= u_mouse;
+		float ball = length(p) - ballSize;
+		d = smin(d, ball, ballSize);
+	`;
+	if(mouse) fragmentShaderCode = fragmentShaderCode.replace('// mouse', mouseCode);
 	const vertexShader = gl.createShader(gl.VERTEX_SHADER);
 	gl.shaderSource(vertexShader, vertexShaderCode);
 	gl.compileShader(vertexShader);
