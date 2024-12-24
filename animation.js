@@ -5,10 +5,10 @@ const gl = cnv.getContext('webgl2');
 
 const quad = [
 	-1, -1,
-	 1, -1,
-	 1,  1,
-	 1,  1,
-	-1,  1,
+	1, -1,
+	1, 1,
+	1, 1,
+	-1, 1,
 	-1, -1,
 ];
 
@@ -38,7 +38,14 @@ initGL();
 
 function initGL() {
 	gl.viewport(0, 0, width, height);
-	program = makeProgram(gl, mouse);
+	const todayDate = new Date();
+	console.log(todayDate.getMonth(), todayDate.getDate());
+	if ((todayDate.getMonth() === 11 && todayDate.getDate() > 20) || (todayDate.getMonth() === 0 && todayDate.getDate() < 15)) {
+		program = makeProgramXmas(gl, mouse);
+	}
+	else {
+		program = makeProgram(gl, mouse);
+	}
 
 	gl.useProgram(program.program);
 
